@@ -30,7 +30,7 @@ public class AtcoCifToGtfsConverterMain {
 
     AtcoCifToGtfsConverter converter = new AtcoCifToGtfsConverter();
     converter.setInputPath(new File(args[0]));
-    converter.setOutputPath(new File(args[0]));
+    converter.setOutputPath(new File(args[1]));
     converter.run();
   }
 

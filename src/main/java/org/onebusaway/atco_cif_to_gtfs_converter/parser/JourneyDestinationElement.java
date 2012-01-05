@@ -1,6 +1,6 @@
 package org.onebusaway.atco_cif_to_gtfs_converter.parser;
 
-public class JourneyDestinationElement extends JourneyElement {
+public class JourneyDestinationElement extends JourneyTimePointElement {
 
   private int arrivalTime;
 
@@ -14,5 +14,15 @@ public class JourneyDestinationElement extends JourneyElement {
 
   public void setArrivalTime(int arrivalTime) {
     this.arrivalTime = arrivalTime;
+  }
+
+  @Override
+  public int getArrivalTimeInSeconds() {
+    return arrivalTime * 60;
+  }
+
+  @Override
+  public int getDepartureTimeInSeconds() {
+    return getArrivalTimeInSeconds();
   }
 }

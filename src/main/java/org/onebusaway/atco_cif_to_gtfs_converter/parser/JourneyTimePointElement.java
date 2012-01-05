@@ -1,12 +1,13 @@
 package org.onebusaway.atco_cif_to_gtfs_converter.parser;
 
-public class JourneyElement extends AtcoCifElement {
+public abstract class JourneyTimePointElement extends AtcoCifElement implements
+    JourneyChildElement {
 
   private JourneyHeaderElement header;
 
   private String locationId;
 
-  public JourneyElement(AtcoCifElement.Type type) {
+  public JourneyTimePointElement(AtcoCifElement.Type type) {
     super(type);
   }
 
@@ -25,4 +26,8 @@ public class JourneyElement extends AtcoCifElement {
   public void setLocationId(String locationId) {
     this.locationId = locationId;
   }
+
+  public abstract int getArrivalTimeInSeconds();
+  
+  public abstract int getDepartureTimeInSeconds();
 }

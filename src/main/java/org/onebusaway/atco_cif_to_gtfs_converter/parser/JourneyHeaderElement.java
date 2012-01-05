@@ -7,10 +7,6 @@ import org.onebusaway.gtfs.model.calendar.ServiceDate;
 
 public class JourneyHeaderElement extends AtcoCifElement {
 
-  public enum VehicleType {
-    TRAIN
-  }
-
   private String journeyIdentifier;
 
   private ServiceDate startDate;
@@ -33,9 +29,11 @@ public class JourneyHeaderElement extends AtcoCifElement {
 
   private String routeIdentifier;
 
-  private VehicleType vehicleType;
+  private String vehicleType;
 
-  private List<JourneyElement> elements = new ArrayList<JourneyElement>();
+  private List<JourneyDateRunningElement> calendarModifications = new ArrayList<JourneyDateRunningElement>();
+
+  private List<JourneyTimePointElement> timePoints = new ArrayList<JourneyTimePointElement>();
 
   public JourneyHeaderElement() {
     super(Type.JOURNEY_HEADER);
@@ -129,19 +127,28 @@ public class JourneyHeaderElement extends AtcoCifElement {
     this.routeIdentifier = routeIdentifier;
   }
 
-  public VehicleType getVehicleType() {
+  public String getVehicleType() {
     return vehicleType;
   }
 
-  public void setVehicleType(VehicleType vehicleType) {
+  public void setVehicleType(String vehicleType) {
     this.vehicleType = vehicleType;
   }
 
-  public List<JourneyElement> getElements() {
-    return elements;
+  public List<JourneyDateRunningElement> getCalendarModifications() {
+    return calendarModifications;
   }
 
-  public void setElements(List<JourneyElement> elements) {
-    this.elements = elements;
+  public void setCalendarModifications(
+      List<JourneyDateRunningElement> calendarModifications) {
+    this.calendarModifications = calendarModifications;
+  }
+
+  public List<JourneyTimePointElement> getTimePoints() {
+    return timePoints;
+  }
+
+  public void setTimePoints(List<JourneyTimePointElement> elements) {
+    this.timePoints = elements;
   }
 }
