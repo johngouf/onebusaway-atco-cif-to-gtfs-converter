@@ -54,9 +54,6 @@ public class AtcoCifParser {
   // private static final String _toProjectionSpec =
   // "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
 
-  private static final Projection _toProjection =
-  ProjectionFactory.
-
   private int _currentLineCount = 0;
 
   private String _currentLine;
