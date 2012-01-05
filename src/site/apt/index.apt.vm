@@ -1,0 +1,50 @@
+onebusaway-atco-cif-to-gtfs-converter
+
+  We provide a utility for converting transit schedule information in the
+  {{{http://travelinedata.org.uk/CIF/atco-cif-spec.pdf}ATCO-CIF}} format into
+  the {{{http://code.google.com/transit/spec/transit_feed_specification.html}GTFS}}
+  format.
+  
+  #set( $url = 'http://nexus.onebusaway.org/service/local/artifact/maven/content?r=public&g=org.onebusaway&a=onebusaway-atco-cif-to-gtfs-converter&v=' + ${currentVersion} )
+
+  Details on all releases can be found in the {{{./release-notes.html}Release Notes}}.
+  
+  
+  <<Download Current Version:>> {{{${url}}onebusaway-atco-cif-to-gtfs-converter-${currentVersion}.jar}}
+
+* Running the Converter
+
+  You need {{{http://java.com/}Java}} installed to run the converter utility.
+  
++---+
+java -jar onebusaway-atco-cif-to-gtfs-converter.jar [args] atco_cif_input_path gtfs_output_path
++---+
+
+* Arguments
+
+  The program requires two arguments:
+  
+  * <<<atco_cif_input_path>>> - a path point to either a CIF file or a directory
+  containing CIF files, that will be read as input.
+  
+  * <<<gtfs_output_path>>> - a path where the resulting GTFS feed will be
+  written.
+  
+  []
+
+  The following optional arguments can be used to control how the agency entry
+  in the GTFS <<<agency.txt>>> file is populated:
+
+  * <<<--agencyId=...>>> - specify the agency id used for the feed
+  
+  * <<<--agencyName=...>>> - specify the agency name used for the feed
+  
+  * <<<--agencyUrl=...>>> - specify the agency url used for the feed
+  
+  * <<<--agencyTimezone...>>> - specify the agency timezone used for the feed
+  
+  * <<<--agencyLang=...>>> - specify the agency lang used for the feed
+  
+  * <<<--agencyPhone=...>>> - specify the agency phone used for the feed
+  
+  []

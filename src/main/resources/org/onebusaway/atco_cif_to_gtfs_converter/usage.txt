@@ -1,0 +1,23 @@
+usage:
+
+  [args] atco_cif_input_path gtfs_output_path
+
+args:
+
+  The program requires two arguments:
+  
+    atco_cif_input_path - a path point to either a CIF file or a directory
+      containing CIF files, that will be read as input.
+    gtfs_output_path - a path where the resulting GTFS feed will be
+      written.
+  
+  The following optional arguments can be used to control how the agency entry
+  in the GTFS agency.txt file is populated:
+
+    --agencyId=...        specify the agency id used for the feed
+    --agencyName=...      specify the agency name used for the feed
+    --agencyUrl=...       specify the agency url used for the feed
+    --agencyTimezone...   specify the agency timezone used for the feed
+    --agencyLang=...      specify the agency lang used for the feed
+    --agencyPhone=...     specify the agency phone used for the feed
+

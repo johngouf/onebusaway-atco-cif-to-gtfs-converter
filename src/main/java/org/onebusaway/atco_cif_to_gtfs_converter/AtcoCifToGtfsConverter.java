@@ -91,6 +91,30 @@ public class AtcoCifToGtfsConverter {
   public void setOutputPath(File outputPath) {
     _outputPath = outputPath;
   }
+  
+  public void setAgencyId(String agencyId) {
+    _agencyId = agencyId;
+  }
+  
+  public void setAgencyName(String agencyName) {
+    _agencyName = agencyName;
+  }
+  
+  public void setAgencyUrl(String agencyUrl) {
+    _agencyUrl = agencyUrl;
+  }
+  
+  public void setAgencyPhone(String agencyPhone) {
+    _agencyPhone = agencyPhone;
+  }
+  
+  public void setAgencyTimezone(String agencyTimezone) {
+    _agencyTimezone = agencyTimezone;
+  }
+  
+  public void setAgencyLang(String agencyLang) {
+    _agencyLang = agencyLang;
+  }
 
   public void run() throws IOException {
     List<File> paths = new ArrayList<File>();

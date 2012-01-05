@@ -15,8 +15,11 @@
  */
 package org.onebusaway.atco_cif_to_gtfs_converter;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -25,6 +28,19 @@ import org.apache.commons.cli.Parser;
 import org.apache.commons.cli.PosixParser;
 
 public class AtcoCifToGtfsConverterMain {
+
+  private static final String ARG_AGENCY_ID = "agencyId";
+
+  private static final String ARG_AGENCY_LANG = "agencyLang";
+
+  private static final String ARG_AGENCY_NAME = "agencyName";
+
+  private static final String ARG_AGENCY_PHONE = "agencyPhone";
+
+  private static final String ARG_AGENCY_TIMEZONE = "agencyTimezone";
+
+  private static final String ARG_AGENCY_URL = "agencyUrl";
+
   public static void main(String[] args) throws ParseException, IOException {
     AtcoCifToGtfsConverterMain m = new AtcoCifToGtfsConverterMain();
     m.run(args);
@@ -44,17 +60,53 @@ public class AtcoCifToGtfsConverterMain {
     }
 
     AtcoCifToGtfsConverter converter = new AtcoCifToGtfsConverter();
-    converter.setInputPath(new File(args[0]));
-    converter.setOutputPath(new File(args[1]));
+    configureConverter(args, cli, converter);
+
     converter.run();
   }
 
-  protected void buildOptions(Options options) {
+  private void configureConverter(String[] args, CommandLine cli,
+      AtcoCifToGtfsConverter converter) {
 
+    converter.setInputPath(new File(args[0]));
+    converter.setOutputPath(new File(args[1]));
+
+    if (cli.hasOption(ARG_AGENCY_ID)) {
+      converter.setAgencyId(cli.getOptionValue(ARG_AGENCY_ID));
+    }
+    if (cli.hasOption(ARG_AGENCY_LANG)) {
+      converter.setAgencyLang(cli.getOptionValue(ARG_AGENCY_LANG));
+    }
+    if (cli.hasOption(ARG_AGENCY_NAME)) {
+      converter.setAgencyName(cli.getOptionValue(ARG_AGENCY_NAME));
+    }
+    if (cli.hasOption(ARG_AGENCY_PHONE)) {
+      converter.setAgencyPhone(cli.getOptionValue(ARG_AGENCY_PHONE));
+    }
+    if (cli.hasOption(ARG_AGENCY_TIMEZONE)) {
+      converter.setAgencyTimezone(cli.getOptionValue(ARG_AGENCY_TIMEZONE));
+    }
+    if (cli.hasOption(ARG_AGENCY_URL)) {
+      converter.setAgencyUrl(cli.getOptionValue(ARG_AGENCY_URL));
+    }
   }
 
-  private void usage() {
-    System.err.println("usage: input.cif gtfs_output.zip");
-    System.err.println("usage: input_path gtfs_output.zip");
+  protected void buildOptions(Options options) {
+    options.addOption(ARG_AGENCY_ID, true, "agency id");
+    options.addOption(ARG_AGENCY_LANG, true, "agency lang");
+    options.addOption(ARG_AGENCY_NAME, true, "agency name");
+    options.addOption(ARG_AGENCY_PHONE, true, "agency phone");
+    options.addOption(ARG_AGENCY_TIMEZONE, true, "agency timezone");
+    options.addOption(ARG_AGENCY_URL, true, "agency url");
+  }
+
+  private void usage() throws IOException {
+    InputStream in = getClass().getResourceAsStream("usage.txt");
+    BufferedReader reader = new BufferedReader( new InputStreamReader(in));
+    String line = null;
+    while((line = reader.readLine()) != null){
+      System.err.println(line);
+    }
+    reader.close();
   }
 }
