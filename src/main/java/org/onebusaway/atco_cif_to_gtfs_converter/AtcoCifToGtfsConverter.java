@@ -427,8 +427,11 @@ public class AtcoCifToGtfsConverter {
         JourneyHeaderElement existing = _journeysById.put(
             journey.getJourneyIdentifier(), journey);
         if (existing != null) {
-          throw new AtcoCifException("duplicate journey id "
-              + journey.getJourneyIdentifier());
+          throw new AtcoCifException("duplicate journey id \""
+              + journey.getJourneyIdentifier() + "\" from:\n" + ""
+              + " existing: path=" + existing.getPath() + " line="
+              + existing.getLineNumber() + ")\n" + "      new: path="
+              + element.getPath() + " line=" + element.getLineNumber() + ")");
         }
       } else if (element instanceof LocationElement) {
         LocationElement location = (LocationElement) element;

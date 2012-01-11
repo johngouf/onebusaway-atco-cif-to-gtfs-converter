@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -34,6 +35,8 @@ import com.jhlabs.map.proj.ProjectionFactory;
 
 public class AtcoCifParser {
 
+  private static final byte[] UTF8_BOM = {(byte) 0xef, (byte) 0xbb, (byte) 0xbf};
+
   private static Map<String, AtcoCifElement.Type> _typesByKey = new HashMap<String, AtcoCifElement.Type>();
 
   static {
@@ -45,6 +48,8 @@ public class AtcoCifParser {
     _typesByKey.put("QL", AtcoCifElement.Type.LOCATION);
     _typesByKey.put("QB", AtcoCifElement.Type.ADDITIONAL_LOCATION);
     _typesByKey.put("QV", AtcoCifElement.Type.VEHICLE_TYPE);
+    _typesByKey.put("ZM", AtcoCifElement.Type.UNKNOWN);
+    _typesByKey.put("ZS", AtcoCifElement.Type.UNKNOWN);
   }
 
   private static final String _fromProjectionSpec = "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 "
@@ -56,14 +61,16 @@ public class AtcoCifParser {
 
   private static final Projection _toProjection = ProjectionFactory.fromPROJ4Specification(_toProjectionSpec.split(" "));
 
-  private int _currentLineCount = 0;
+  private File _currentPath = null;
+
+  private int _currentLineNumber = 0;
 
   private String _currentLine;
 
   private int _currentLineCharactersConsumed;
 
   private JourneyHeaderElement _currentJourney = null;
-  
+
   private Date _maxServiceDate;
 
   public AtcoCifParser() {
@@ -76,17 +83,19 @@ public class AtcoCifParser {
       throws IOException {
 
     BufferedReader reader = new BufferedReader(new FileReader(path));
+    _currentPath = path;
     _currentJourney = null;
     _currentLine = null;
-    _currentLineCount = 0;
+    _currentLineNumber = 0;
     _currentLineCharactersConsumed = 0;
 
     handler.startDocument();
 
     while ((_currentLine = reader.readLine()) != null) {
+
       _currentLineCharactersConsumed = 0;
-      _currentLineCount++;
-      if (_currentLineCount == 1) {
+      _currentLineNumber++;
+      if (_currentLineNumber == 1) {
         parseHeader(handler);
       } else {
         parseLine(handler);
@@ -97,6 +106,13 @@ public class AtcoCifParser {
   }
 
   private void parseHeader(AtcoCifContentHandler handler) {
+    /**
+     * Check for and strip the UTF-8 BOM
+     */
+    String prefix = peek(1);
+    if (prefix.length() == 1 && Arrays.equals(prefix.getBytes(), UTF8_BOM)) {
+      pop(1);
+    }
     String start = pop(8);
     if (!start.equals("ATCO-CIF")) {
       throw new AtcoCifException("Excepted feed header to start with ATCO-CIF");
@@ -108,7 +124,7 @@ public class AtcoCifParser {
     AtcoCifElement.Type type = _typesByKey.get(typeValue);
     if (type == null) {
       throw new AtcoCifException("uknown record type: " + typeValue
-          + " at line " + _currentLineCount);
+          + " at line " + _currentLineNumber);
     }
     switch (type) {
       case JOURNEY_HEADER:
@@ -135,6 +151,8 @@ public class AtcoCifParser {
       case VEHICLE_TYPE:
         parseVehicleType(handler);
         break;
+      case UNKNOWN:
+        break;
       default:
         throw new AtcoCifException("unhandled record type: " + type);
     }
@@ -142,7 +160,7 @@ public class AtcoCifParser {
   }
 
   private void parseJourneyHeader(AtcoCifContentHandler handler) {
-    JourneyHeaderElement element = new JourneyHeaderElement();
+    JourneyHeaderElement element = element(new JourneyHeaderElement());
 
     String transactionType = pop(1);
     String operator = pop(4);
@@ -172,28 +190,34 @@ public class AtcoCifParser {
     handler.startElement(element);
   }
 
+  private <T extends AtcoCifElement> T element(T element) {
+    element.setPath(_currentPath);
+    element.setLineNumber(_currentLineNumber);
+    return element;
+  }
+
   private void parseJourneyDateRunning(AtcoCifContentHandler handler) {
-    JourneyDateRunningElement element = new JourneyDateRunningElement();
+    JourneyDateRunningElement element = element(new JourneyDateRunningElement());
     element.setStartDate(serviceDate(pop(8)));
     element.setEndDate(serviceDate(pop(8)));
     element.setOperationCode(integer(pop(1)));
     if (_currentJourney == null)
       throw new AtcoCifException("journey timepoint without header at line "
-          + _currentLineCount);
+          + _currentLineNumber);
     _currentJourney.getCalendarModifications().add(element);
     fireElement(element, handler);
 
   }
 
   private void parseJourneyOrigin(AtcoCifContentHandler handler) {
-    JourneyOriginElement element = new JourneyOriginElement();
+    JourneyOriginElement element = element(new JourneyOriginElement());
     element.setLocationId(pop(12));
     element.setDepartureTime(time(pop(4)));
     pushTimepointElement(element, handler);
   }
 
   private void parseJourneyIntermediate(AtcoCifContentHandler handler) {
-    JourneyIntermediateElement element = new JourneyIntermediateElement();
+    JourneyIntermediateElement element = element(new JourneyIntermediateElement());
     element.setLocationId(pop(12));
     element.setArrivalTime(time(pop(4)));
     element.setDepartureTime(time(pop(4)));
@@ -201,7 +225,7 @@ public class AtcoCifParser {
   }
 
   private void parseJourneyDestination(AtcoCifContentHandler handler) {
-    JourneyDestinationElement element = new JourneyDestinationElement();
+    JourneyDestinationElement element = element(new JourneyDestinationElement());
     element.setLocationId(pop(12));
     element.setArrivalTime(time(pop(4)));
     pushTimepointElement(element, handler);
@@ -211,14 +235,14 @@ public class AtcoCifParser {
       AtcoCifContentHandler handler) {
     if (_currentJourney == null)
       throw new AtcoCifException("journey timepoint without header at line "
-          + _currentLineCount);
+          + _currentLineNumber);
     element.setHeader(_currentJourney);
     _currentJourney.getTimePoints().add(element);
     fireElement(element, handler);
   }
 
   private void parseLocation(AtcoCifContentHandler handler) {
-    LocationElement element = new LocationElement();
+    LocationElement element = element(new LocationElement());
     String transactionType = pop(1);
     element.setLocationId(pop(12));
     element.setName(pop(48));
@@ -226,7 +250,7 @@ public class AtcoCifParser {
   }
 
   private void parseAdditionalLocation(AtcoCifContentHandler handler) {
-    AdditionalLocationElement element = new AdditionalLocationElement();
+    AdditionalLocationElement element = element(new AdditionalLocationElement());
     String transactionType = pop(1);
     element.setLocationId(pop(12));
     long x = Long.parseLong(pop(8));
@@ -241,7 +265,7 @@ public class AtcoCifParser {
   }
 
   private void parseVehicleType(AtcoCifContentHandler handler) {
-    VehicleTypeElement element = new VehicleTypeElement();
+    VehicleTypeElement element = element(new VehicleTypeElement());
     pop(1);
     element.setId(pop(8));
     element.setDescription(pop(24));
@@ -273,7 +297,7 @@ public class AtcoCifParser {
       return serviceDate;
     } catch (ParseException e) {
       throw new AtcoCifException("error parsing service date \"" + value
-          + "\" at line " + _currentLineCount, e);
+          + "\" at line " + _currentLineNumber, e);
     }
   }
 
@@ -289,7 +313,7 @@ public class AtcoCifParser {
 
   private String pop(int count) {
     if (_currentLine.length() < count) {
-      throw new AtcoCifException("expected line " + _currentLineCount
+      throw new AtcoCifException("expected line " + _currentLineNumber
           + " to have length of at least "
           + (_currentLineCharactersConsumed + count) + " but only found "
           + (_currentLineCharactersConsumed + _currentLine.length()));
@@ -298,5 +322,10 @@ public class AtcoCifParser {
     _currentLine = _currentLine.substring(count);
     _currentLineCharactersConsumed += count;
     return value.trim();
+  }
+
+  private String peek(int count) {
+    count = Math.min(count, _currentLine.length());
+    return _currentLine.substring(0, count);
   }
 }

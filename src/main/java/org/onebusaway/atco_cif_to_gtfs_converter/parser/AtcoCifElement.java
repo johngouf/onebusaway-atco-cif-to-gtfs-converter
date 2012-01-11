@@ -15,13 +15,19 @@
  */
 package org.onebusaway.atco_cif_to_gtfs_converter.parser;
 
+import java.io.File;
+
 public class AtcoCifElement {
 
   public enum Type {
-    JOURNEY_DATE_RUNNING, JOURNEY_HEADER, JOURNEY_ORIGIN, JOURNEY_INTERMEDIATE, JOURNEY_DESTINATION, LOCATION, ADDITIONAL_LOCATION, VEHICLE_TYPE
+    JOURNEY_DATE_RUNNING, JOURNEY_HEADER, JOURNEY_ORIGIN, JOURNEY_INTERMEDIATE, JOURNEY_DESTINATION, LOCATION, ADDITIONAL_LOCATION, VEHICLE_TYPE, UNKNOWN
   }
 
   private final Type type;
+
+  private File path;
+
+  private int lineNumber;
 
   public AtcoCifElement(Type type) {
     this.type = type;
@@ -29,5 +35,21 @@ public class AtcoCifElement {
 
   public Type getType() {
     return type;
+  }
+
+  public File getPath() {
+    return path;
+  }
+
+  public void setPath(File path) {
+    this.path = path;
+  }
+
+  public int getLineNumber() {
+    return lineNumber;
+  }
+
+  public void setLineNumber(int lineNumber) {
+    this.lineNumber = lineNumber;
   }
 }
