@@ -28,12 +28,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.onebusaway.gtfs.model.calendar.ServiceDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.jhlabs.map.proj.CoordinateSystemToCoordinateSystem;
 import com.jhlabs.map.proj.Projection;
+import com.jhlabs.map.proj.ProjectionException;
 import com.jhlabs.map.proj.ProjectionFactory;
 
 public class AtcoCifParser {
+
+  private static Logger _log = LoggerFactory.getLogger(AtcoCifParser.class);
 
   private static final byte[] UTF8_BOM = {(byte) 0xef, (byte) 0xbb, (byte) 0xbf};
 
@@ -48,6 +53,12 @@ public class AtcoCifParser {
     _typesByKey.put("QL", AtcoCifElement.Type.LOCATION);
     _typesByKey.put("QB", AtcoCifElement.Type.ADDITIONAL_LOCATION);
     _typesByKey.put("QV", AtcoCifElement.Type.VEHICLE_TYPE);
+    _typesByKey.put("QC", AtcoCifElement.Type.UNKNOWN);
+    _typesByKey.put("QP", AtcoCifElement.Type.UNKNOWN);
+    _typesByKey.put("QQ", AtcoCifElement.Type.UNKNOWN);
+    _typesByKey.put("QJ", AtcoCifElement.Type.UNKNOWN);
+    _typesByKey.put("QD", AtcoCifElement.Type.ROUTE_DESCRIPTION);
+    _typesByKey.put("QY", AtcoCifElement.Type.UNKNOWN);
     _typesByKey.put("ZM", AtcoCifElement.Type.UNKNOWN);
     _typesByKey.put("ZS", AtcoCifElement.Type.UNKNOWN);
   }
@@ -151,6 +162,8 @@ public class AtcoCifParser {
       case VEHICLE_TYPE:
         parseVehicleType(handler);
         break;
+      case ROUTE_DESCRIPTION:
+        parseRouteDescription(handler);
       case UNKNOWN:
         break;
       default:
@@ -163,7 +176,7 @@ public class AtcoCifParser {
     JourneyHeaderElement element = element(new JourneyHeaderElement());
 
     String transactionType = pop(1);
-    String operator = pop(4);
+    element.setOperatorId(pop(4));
     element.setJourneyIdentifier(pop(6));
     element.setStartDate(serviceDate(pop(8)));
     element.setEndDate(serviceDate(pop(8)));
@@ -183,7 +196,7 @@ public class AtcoCifParser {
     element.setVehicleType(pop(8));
 
     String registrationNumber = pop(8);
-    String routeDirection = pop(1);
+    element.setRouteDirection(pop(1));
 
     closeCurrentJourneyIfNeeded(element, handler);
     _currentJourney = element;
@@ -253,15 +266,51 @@ public class AtcoCifParser {
     AdditionalLocationElement element = element(new AdditionalLocationElement());
     String transactionType = pop(1);
     element.setLocationId(pop(12));
-    long x = Long.parseLong(pop(8));
-    long y = Long.parseLong(pop(8));
-    Point2D.Double from = new Point2D.Double(x, y);
-    Point2D.Double result = new Point2D.Double();
-    CoordinateSystemToCoordinateSystem.transform(_fromProjection,
-        _toProjection, from, result);
-    element.setLat(result.y);
-    element.setLon(result.x);
+
+    String xValue = pop(8);
+    String yValue = pop(8);
+    Point2D.Double location = getLocation(xValue, yValue, true);
+    if (location != null) {
+      element.setLat(location.y);
+      element.setLon(location.x);
+    }
     fireElement(element, handler);
+  }
+
+  private Point2D.Double getLocation(String xValue, String yValue,
+      boolean canStripSuffix) {
+
+    if (xValue.isEmpty() && yValue.isEmpty()) {
+      return null;
+    }
+
+    Point2D.Double from = null;
+
+    try {
+      long x = Long.parseLong(xValue);
+      long y = Long.parseLong(yValue);
+      from = new Point2D.Double(x, y);
+    } catch (NumberFormatException ex) {
+      throw new AtcoCifException("error parsing additional location: x="
+          + xValue + " y=" + yValue + " line=" + _currentLineNumber);
+    }
+
+    try {
+      Point2D.Double result = new Point2D.Double();
+      CoordinateSystemToCoordinateSystem.transform(_fromProjection,
+          _toProjection, from, result);
+      return result;
+    } catch (ProjectionException ex) {
+      if (xValue.endsWith("00") && yValue.endsWith("00") && canStripSuffix) {
+        xValue = xValue.substring(0, xValue.length() - 2);
+        yValue = yValue.substring(0, yValue.length() - 2);
+        return getLocation(xValue, yValue, false);
+      }
+    }
+
+    _log.warn("error projecting additional location: x=" + xValue + " y="
+        + yValue + " line=" + _currentLineNumber);
+    return null;
   }
 
   private void parseVehicleType(AtcoCifContentHandler handler) {
@@ -269,6 +318,16 @@ public class AtcoCifParser {
     pop(1);
     element.setId(pop(8));
     element.setDescription(pop(24));
+    fireElement(element, handler);
+  }
+
+  private void parseRouteDescription(AtcoCifContentHandler handler) {
+    RouteDescriptionElement element = element(new RouteDescriptionElement());
+    pop(1);
+    element.setOperatorId(pop(4));
+    element.setRouteNumber(pop(4));
+    element.setRouteDirection(pop(1));
+    element.setRouteDescription(pop(68));
     fireElement(element, handler);
   }
 

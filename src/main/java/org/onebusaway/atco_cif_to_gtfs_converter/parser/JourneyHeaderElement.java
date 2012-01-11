@@ -22,6 +22,8 @@ import org.onebusaway.gtfs.model.calendar.ServiceDate;
 
 public class JourneyHeaderElement extends AtcoCifElement {
 
+  private String operatorId;
+
   private String journeyIdentifier;
 
   private ServiceDate startDate;
@@ -44,6 +46,8 @@ public class JourneyHeaderElement extends AtcoCifElement {
 
   private String routeIdentifier;
 
+  private String routeDirection;
+
   private String vehicleType;
 
   private List<JourneyDateRunningElement> calendarModifications = new ArrayList<JourneyDateRunningElement>();
@@ -52,6 +56,14 @@ public class JourneyHeaderElement extends AtcoCifElement {
 
   public JourneyHeaderElement() {
     super(Type.JOURNEY_HEADER);
+  }
+
+  public String getOperatorId() {
+    return operatorId;
+  }
+
+  public void setOperatorId(String operatorId) {
+    this.operatorId = operatorId;
   }
 
   public String getJourneyIdentifier() {
@@ -140,6 +152,14 @@ public class JourneyHeaderElement extends AtcoCifElement {
 
   public void setRouteIdentifier(String routeIdentifier) {
     this.routeIdentifier = routeIdentifier;
+  }
+
+  public String getRouteDirection() {
+    return routeDirection;
+  }
+
+  public void setRouteDirection(String routeDirection) {
+    this.routeDirection = routeDirection;
   }
 
   public String getVehicleType() {
