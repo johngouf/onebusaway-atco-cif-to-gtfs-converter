@@ -28,6 +28,7 @@ import java.util.Map;
 
 import org.onebusaway.gtfs.model.calendar.ServiceDate;
 
+import com.jhlabs.map.proj.CoordinateSystemToCoordinateSystem;
 import com.jhlabs.map.proj.Projection;
 import com.jhlabs.map.proj.ProjectionFactory;
 
@@ -47,12 +48,13 @@ public class AtcoCifParser {
   }
 
   private static final String _fromProjectionSpec = "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 "
-      + "+y_0=-100000 +ellps=airy +datum=OSGB36  +units=m +no_defs";
-  // +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894
+      + "+y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +datum=OSGB36  +units=m +no_defs";
+
   private static final Projection _fromProjection = ProjectionFactory.fromPROJ4Specification(_fromProjectionSpec.split(" "));
 
-  // private static final String _toProjectionSpec =
-  // "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
+  private static final String _toProjectionSpec = "+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs";
+
+  private static final Projection _toProjection = ProjectionFactory.fromPROJ4Specification(_toProjectionSpec.split(" "));
 
   private int _currentLineCount = 0;
 
@@ -231,8 +233,8 @@ public class AtcoCifParser {
     long y = Long.parseLong(pop(8));
     Point2D.Double from = new Point2D.Double(x, y);
     Point2D.Double result = new Point2D.Double();
-    result = _fromProjection.inverseTransform(from, result);
-    // from = _toProjection.transform(result, from);
+    CoordinateSystemToCoordinateSystem.transform(_fromProjection,
+        _toProjection, from, result);
     element.setLat(result.y);
     element.setLon(result.x);
     fireElement(element, handler);

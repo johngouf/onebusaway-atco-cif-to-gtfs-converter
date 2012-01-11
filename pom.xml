@@ -55,9 +55,9 @@
       <version>1.2.5</version>
     </dependency>
     <dependency>
-      <groupId>edu.washington.cs.rse</groupId>
-      <artifactId>javaproj</artifactId>
-      <version>1.0.4</version>
+      <groupId>org.onebusaway</groupId>
+      <artifactId>onebusaway-jmapprojlib</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
