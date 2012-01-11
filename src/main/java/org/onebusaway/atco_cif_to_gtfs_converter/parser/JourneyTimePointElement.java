@@ -42,7 +42,16 @@ public abstract class JourneyTimePointElement extends AtcoCifElement implements
     this.locationId = locationId;
   }
 
-  public abstract int getArrivalTimeInSeconds();
-  
-  public abstract int getDepartureTimeInSeconds();
+  public abstract int getArrivalTime();
+
+  public abstract int getDepartureTime();
+
+  public abstract void setArrivalTime(int arrivalTime);
+
+  public abstract void setDepartureTime(int departureTime);
+
+  @Override
+  public String toString() {
+    return getArrivalTime() + " " + getDepartureTime();
+  }
 }

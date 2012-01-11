@@ -23,6 +23,7 @@ public class JourneyOriginElement extends JourneyTimePointElement {
     super(AtcoCifElement.Type.JOURNEY_ORIGIN);
   }
 
+  @Override
   public int getDepartureTime() {
     return departureTime;
   }
@@ -32,12 +33,12 @@ public class JourneyOriginElement extends JourneyTimePointElement {
   }
 
   @Override
-  public int getArrivalTimeInSeconds() {
+  public int getArrivalTime() {
     return getDepartureTime();
   }
 
   @Override
-  public int getDepartureTimeInSeconds() {
-    return departureTime * 60;
+  public void setArrivalTime(int arrivalTime) {
+    // IGNORE
   }
 }

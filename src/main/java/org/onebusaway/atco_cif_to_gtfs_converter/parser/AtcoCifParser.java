@@ -63,7 +63,7 @@ public class AtcoCifParser {
   private int _currentLineCharactersConsumed;
 
   private JourneyHeaderElement _currentJourney = null;
-
+  
   private Date _maxServiceDate;
 
   public AtcoCifParser() {

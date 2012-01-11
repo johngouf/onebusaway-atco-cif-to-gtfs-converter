@@ -56,6 +56,8 @@ public class AtcoCifToGtfsConverter {
 
   private static Logger _log = LoggerFactory.getLogger(AtcoCifParser.class);
 
+  private static final int MINUTES_IN_DAY = 24 * 60;
+
   private File _inputPath;
 
   private File _outputPath;
@@ -91,27 +93,27 @@ public class AtcoCifToGtfsConverter {
   public void setOutputPath(File outputPath) {
     _outputPath = outputPath;
   }
-  
+
   public void setAgencyId(String agencyId) {
     _agencyId = agencyId;
   }
-  
+
   public void setAgencyName(String agencyName) {
     _agencyName = agencyName;
   }
-  
+
   public void setAgencyUrl(String agencyUrl) {
     _agencyUrl = agencyUrl;
   }
-  
+
   public void setAgencyPhone(String agencyPhone) {
     _agencyPhone = agencyPhone;
   }
-  
+
   public void setAgencyTimezone(String agencyTimezone) {
     _agencyTimezone = agencyTimezone;
   }
-  
+
   public void setAgencyLang(String agencyLang) {
     _agencyLang = agencyLang;
   }
@@ -297,6 +299,11 @@ public class AtcoCifToGtfsConverter {
   }
 
   private void constructTimepoints(JourneyHeaderElement journey, Trip trip) {
+
+    normalizeTimes(journey);
+
+    boolean first = true;
+
     for (JourneyTimePointElement timePoint : journey.getTimePoints()) {
       AgencyAndId stopId = id(timePoint.getLocationId());
       Stop stop = _dao.getStopForId(stopId);
@@ -306,10 +313,77 @@ public class AtcoCifToGtfsConverter {
       StopTime stopTime = new StopTime();
       stopTime.setTrip(trip);
       stopTime.setStop(stop);
-      stopTime.setArrivalTime(timePoint.getArrivalTimeInSeconds());
+      if (timePoint.getArrivalTime() != 0 || timePoint.getDepartureTime() != 0
+          || first) {
+        stopTime.setArrivalTime(timePoint.getArrivalTime() * 60);
+        stopTime.setDepartureTime(timePoint.getDepartureTime() * 60);
+      }
+
       stopTime.setStopSequence(_dao.getAllStopTimes().size());
       _dao.saveEntity(stopTime);
+      first = false;
     }
+  }
+
+  private void normalizeTimes(JourneyHeaderElement journey) {
+    List<JourneyTimePointElement> timepoints = journey.getTimePoints();
+    if (timepoints.isEmpty()) {
+      return;
+    }
+
+    int prevDepartureTime = -1;
+    int dayOffset = 0;
+
+    for (int i = 0; i < timepoints.size(); ++i) {
+      JourneyTimePointElement timepoint = timepoints.get(i);
+      int arrivalTime = timepoint.getArrivalTime();
+      int departureTime = timepoint.getDepartureTime();
+
+      /**
+       * If both arrival and departure time are zero, we consider them
+       * "unspecified"
+       */
+      if (arrivalTime == 0 && departureTime == 0) {
+        boolean mightBeMidnight = mightBeMidnight(timepoints, timepoint, i,
+            prevDepartureTime);
+
+        if (!mightBeMidnight) {
+          continue;
+        }
+      }
+
+      if (departureTime == 0 && arrivalTime != 0) {
+        departureTime = arrivalTime;
+      }
+
+      if (arrivalTime == 0 && departureTime != 0) {
+        arrivalTime = departureTime;
+      }
+
+      arrivalTime += dayOffset * MINUTES_IN_DAY;
+      while (arrivalTime < prevDepartureTime) {
+        arrivalTime += MINUTES_IN_DAY;
+        dayOffset++;
+      }
+
+      departureTime += dayOffset * MINUTES_IN_DAY;
+      while (departureTime < arrivalTime) {
+        departureTime += MINUTES_IN_DAY;
+        dayOffset++;
+      }
+
+      timepoint.setArrivalTime(arrivalTime);
+      timepoint.setDepartureTime(departureTime);
+      prevDepartureTime = departureTime;
+    }
+  }
+
+  private boolean mightBeMidnight(List<JourneyTimePointElement> timepoints,
+      JourneyTimePointElement timepoint, int i, int prevDepartureTime) {
+
+    int timeToMidnight = MINUTES_IN_DAY - (prevDepartureTime % MINUTES_IN_DAY);
+    boolean firstOrLast = (i == 0) || (i > 0 && i == timepoints.size() - 1);
+    return firstOrLast && timeToMidnight < 15;
   }
 
   private void writeGtfs() throws IOException {

@@ -25,6 +25,7 @@ public class JourneyIntermediateElement extends JourneyTimePointElement {
     super(AtcoCifElement.Type.JOURNEY_INTERMEDIATE);
   }
 
+  @Override
   public int getArrivalTime() {
     return arrivalTime;
   }
@@ -33,21 +34,12 @@ public class JourneyIntermediateElement extends JourneyTimePointElement {
     this.arrivalTime = arrivalTime;
   }
 
+  @Override
   public int getDepartureTime() {
     return departureTime;
   }
 
   public void setDepartureTime(int departureTime) {
     this.departureTime = departureTime;
-  }
-
-  @Override
-  public int getArrivalTimeInSeconds() {
-    return arrivalTime * 60;
-  }
-
-  @Override
-  public int getDepartureTimeInSeconds() {
-    return departureTime * 60;
   }
 }
