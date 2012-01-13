@@ -20,4 +20,5 @@ args:
     --agencyTimezone...   specify the agency timezone used for the feed
     --agencyLang=...      specify the agency lang used for the feed
     --agencyPhone=...     specify the agency phone used for the feed
+    --vehicleType=...     specify a default GTFS route vehicle type for the feed
 

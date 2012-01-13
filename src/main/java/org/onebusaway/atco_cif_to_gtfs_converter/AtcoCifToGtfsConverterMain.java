@@ -26,6 +26,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.Parser;
 import org.apache.commons.cli.PosixParser;
+import org.onebusaway.atco_cif_to_gtfs_converter.parser.AtcoCifException;
 
 public class AtcoCifToGtfsConverterMain {
 
@@ -40,6 +41,8 @@ public class AtcoCifToGtfsConverterMain {
   private static final String ARG_AGENCY_TIMEZONE = "agencyTimezone";
 
   private static final String ARG_AGENCY_URL = "agencyUrl";
+
+  private static final String ARG_VEHICLE_TYPE = "vehicleType";
 
   public static void main(String[] args) throws ParseException, IOException {
     AtcoCifToGtfsConverterMain m = new AtcoCifToGtfsConverterMain();
@@ -89,6 +92,34 @@ public class AtcoCifToGtfsConverterMain {
     if (cli.hasOption(ARG_AGENCY_URL)) {
       converter.setAgencyUrl(cli.getOptionValue(ARG_AGENCY_URL));
     }
+    if (cli.hasOption(ARG_VEHICLE_TYPE)) {
+      String value = cli.getOptionValue(ARG_VEHICLE_TYPE).toLowerCase();
+      if (value.contains("tram") || value.contains("streetcar")
+          || value.contains("lightrail")) {
+        converter.setVehicleType(0);
+      } else if (value.contains("subway") || value.contains("metro")) {
+        converter.setVehicleType(1);
+      } else if (value.contains("rail")) {
+        converter.setVehicleType(2);
+      } else if (value.contains("bus")) {
+        converter.setVehicleType(3);
+      } else if (value.contains("ferry")) {
+        converter.setVehicleType(4);
+      } else if (value.contains("cablecar")) {
+        converter.setVehicleType(5);
+      } else if (value.contains("gondola")) {
+        converter.setVehicleType(6);
+      } else if (value.contains("funicular")) {
+        converter.setVehicleType(7);
+      } else {
+        try {
+          converter.setVehicleType(Integer.parseInt(value));
+        } catch (NumberFormatException ex) {
+          throw new AtcoCifException(
+              "unknown vehicle type argument specified: " + value);
+        }
+      }
+    }
   }
 
   protected void buildOptions(Options options) {
@@ -98,13 +129,14 @@ public class AtcoCifToGtfsConverterMain {
     options.addOption(ARG_AGENCY_PHONE, true, "agency phone");
     options.addOption(ARG_AGENCY_TIMEZONE, true, "agency timezone");
     options.addOption(ARG_AGENCY_URL, true, "agency url");
+    options.addOption(ARG_VEHICLE_TYPE, true, "vehicle type");
   }
 
   private void usage() throws IOException {
     InputStream in = getClass().getResourceAsStream("usage.txt");
-    BufferedReader reader = new BufferedReader( new InputStreamReader(in));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
     String line = null;
-    while((line = reader.readLine()) != null){
+    while ((line = reader.readLine()) != null) {
       System.err.println(line);
     }
     reader.close();

@@ -18,8 +18,10 @@ package org.onebusaway.atco_cif_to_gtfs_converter.parser;
 import java.awt.geom.Point2D;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -54,7 +56,7 @@ public class AtcoCifParser {
     _typesByKey.put("QB", AtcoCifElement.Type.ADDITIONAL_LOCATION);
     _typesByKey.put("QV", AtcoCifElement.Type.VEHICLE_TYPE);
     _typesByKey.put("QC", AtcoCifElement.Type.UNKNOWN);
-    _typesByKey.put("QP", AtcoCifElement.Type.UNKNOWN);
+    _typesByKey.put("QP", AtcoCifElement.Type.OPERATOR);
     _typesByKey.put("QQ", AtcoCifElement.Type.UNKNOWN);
     _typesByKey.put("QJ", AtcoCifElement.Type.UNKNOWN);
     _typesByKey.put("QD", AtcoCifElement.Type.ROUTE_DESCRIPTION);
@@ -93,7 +95,8 @@ public class AtcoCifParser {
   public void parse(File path, AtcoCifContentHandler handler)
       throws IOException {
 
-    BufferedReader reader = new BufferedReader(new FileReader(path));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(
+        new FileInputStream(path), "UTF-8"));
     _currentPath = path;
     _currentJourney = null;
     _currentLine = null;
@@ -120,14 +123,28 @@ public class AtcoCifParser {
     /**
      * Check for and strip the UTF-8 BOM
      */
-    String prefix = peek(1);
-    if (prefix.length() == 1 && Arrays.equals(prefix.getBytes(), UTF8_BOM)) {
-      _log.info("BOM!");
-      pop(1);
+    try {
+      String prefix = peek(1);
+      if (prefix.length() == 1
+          && Arrays.equals(prefix.getBytes("UTF-8"), UTF8_BOM)) {
+        pop(1);
+      }
+    } catch (UnsupportedEncodingException ex) {
+      throw new IllegalStateException(ex);
     }
+
     String start = pop(8);
     if (!start.equals("ATCO-CIF")) {
-      throw new AtcoCifException("Excepted feed header to start with ATCO-CIF");
+      StringBuilder b = new StringBuilder();
+      for (byte singleByte : start.getBytes()) {
+        String hb = Integer.toHexString(0xff & singleByte);
+        if (hb.length() < 2)
+          hb += " ";
+        b.append(hb).append(" ");
+      }
+      throw new AtcoCifException(
+          "Excepted feed header to start with ATCO-CIF.  Instead, found \""
+              + start + "\" (" + b.toString() + ")");
     }
   }
 
@@ -165,6 +182,10 @@ public class AtcoCifParser {
         break;
       case ROUTE_DESCRIPTION:
         parseRouteDescription(handler);
+        break;
+      case OPERATOR:
+        parseOperator(handler);
+        break;
       case UNKNOWN:
         break;
       default:
@@ -202,12 +223,6 @@ public class AtcoCifParser {
     closeCurrentJourneyIfNeeded(element, handler);
     _currentJourney = element;
     handler.startElement(element);
-  }
-
-  private <T extends AtcoCifElement> T element(T element) {
-    element.setPath(_currentPath);
-    element.setLineNumber(_currentLineNumber);
-    return element;
   }
 
   private void parseJourneyDateRunning(AtcoCifContentHandler handler) {
@@ -330,6 +345,23 @@ public class AtcoCifParser {
     element.setRouteDirection(pop(1));
     element.setRouteDescription(pop(68));
     fireElement(element, handler);
+  }
+
+  private void parseOperator(AtcoCifContentHandler handler) {
+    OperatorElement element = element(new OperatorElement());
+    pop(1);
+    element.setOperatorId(pop(4));
+    element.setShortFormName(pop(24));
+    element.setLegalName(pop(48));
+    element.setEnquiryPhone(pop(12));
+    element.setContactPhone(pop(12));
+    fireElement(element, handler);
+  }
+
+  private <T extends AtcoCifElement> T element(T element) {
+    element.setPath(_currentPath);
+    element.setLineNumber(_currentLineNumber);
+    return element;
   }
 
   private void fireElement(AtcoCifElement element, AtcoCifContentHandler handler) {

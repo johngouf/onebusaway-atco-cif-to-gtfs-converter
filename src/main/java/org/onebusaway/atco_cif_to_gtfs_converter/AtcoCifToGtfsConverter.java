@@ -35,6 +35,7 @@ import org.onebusaway.atco_cif_to_gtfs_converter.parser.JourneyDateRunningElemen
 import org.onebusaway.atco_cif_to_gtfs_converter.parser.JourneyHeaderElement;
 import org.onebusaway.atco_cif_to_gtfs_converter.parser.JourneyTimePointElement;
 import org.onebusaway.atco_cif_to_gtfs_converter.parser.LocationElement;
+import org.onebusaway.atco_cif_to_gtfs_converter.parser.OperatorElement;
 import org.onebusaway.atco_cif_to_gtfs_converter.parser.RouteDescriptionElement;
 import org.onebusaway.atco_cif_to_gtfs_converter.parser.VehicleTypeElement;
 import org.onebusaway.csv_entities.schema.DefaultEntitySchemaFactory;
@@ -75,6 +76,8 @@ public class AtcoCifToGtfsConverter {
 
   private String _agencyPhone = "";
 
+  private int _vehicleType = -1;
+
   private Map<AgencyAndId, List<JourneyHeaderElement>> _journeysById = new HashMap<AgencyAndId, List<JourneyHeaderElement>>();
 
   private Map<String, LocationElement> _locationById = new HashMap<String, LocationElement>();
@@ -84,6 +87,8 @@ public class AtcoCifToGtfsConverter {
   private Map<String, VehicleTypeElement> _vehicleTypesById = new HashMap<String, VehicleTypeElement>();
 
   private Map<AgencyAndId, Map<String, RouteDescriptionElement>> _routeDescriptionsByIdAndDirection = new HashMap<AgencyAndId, Map<String, RouteDescriptionElement>>();
+
+  private Map<String, OperatorElement> _operatorsById = new HashMap<String, OperatorElement>();
 
   private Map<String, String> _serviceDateModificationSuffixByKey = new HashMap<String, String>();
 
@@ -119,6 +124,10 @@ public class AtcoCifToGtfsConverter {
 
   public void setAgencyLang(String agencyLang) {
     _agencyLang = agencyLang;
+  }
+  
+  public void setVehicleType(int vehicleType) {
+    _vehicleType = vehicleType;
   }
 
   public void run() throws IOException {
@@ -199,11 +208,19 @@ public class AtcoCifToGtfsConverter {
     if (agency == null) {
       agency = new Agency();
       agency.setId(id);
-      agency.setName(_agencyName);
+
+      OperatorElement operator = _operatorsById.get(id);
+      agency.setTimezone(_agencyTimezone);
       agency.setUrl(_agencyUrl);
       agency.setLang(_agencyLang);
-      agency.setTimezone(_agencyTimezone);
-      agency.setPhone(_agencyPhone);
+
+      if (operator != null) {
+        agency.setName(operator.getShortFormName());
+        agency.setPhone(operator.getEnquiryPhone());
+      } else {
+        agency.setName(_agencyName);
+        agency.setPhone(_agencyPhone);
+      }
       _dao.saveEntity(agency);
     }
     return agency;
@@ -215,14 +232,16 @@ public class AtcoCifToGtfsConverter {
       throw new AtcoCifException("unknown vehicle type: " + vehicleType);
     }
     String desc = vehicleType.getDescription().toLowerCase();
-    if (desc.equals("bus") || desc.equals("coach")
-        || desc.equals("normal service")) {
+    if (desc.equals("bus") || desc.equals("coach")) {
       return 3;
     } else if (desc.equals("heavy rail")) {
       return 2;
+    } else if (_vehicleType != -1) {
+      return _vehicleType;
     } else {
-      _log.info("unhandled vehicle type description: " + desc);
-      return 3;
+      throw new AtcoCifException(
+          "no defautl VehicleType specified and could not determine GTFS route vehicle type from ATCO-CIF vehicle type description: "
+              + desc);
     }
   }
 
@@ -520,7 +539,15 @@ public class AtcoCifToGtfsConverter {
         if (existing != null) {
           System.out.println(existing);
         }
+      } else if (element instanceof OperatorElement) {
+        OperatorElement operator = (OperatorElement) element;
+        OperatorElement existing = _operatorsById.put(operator.getOperatorId(),
+            operator);
+        if (existing != null) {
+          _log.info("!");
+        }
       }
+
     }
 
     @Override

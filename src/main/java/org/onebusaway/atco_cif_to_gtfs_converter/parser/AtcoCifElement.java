@@ -38,6 +38,8 @@ public class AtcoCifElement {
     VEHICLE_TYPE,
 
     ROUTE_DESCRIPTION,
+    
+    OPERATOR,
 
     UNKNOWN
   }

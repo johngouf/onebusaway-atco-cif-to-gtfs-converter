@@ -47,4 +47,35 @@ java -jar onebusaway-atco-cif-to-gtfs-converter.jar [args] atco_cif_input_path g
   
   * <<<--agencyPhone=...>>> - specify the agency phone used for the feed
   
+  * <<<--vehicleType=...>>> - specify a default {{{https://developers.google.com/transit/gtfs/reference#routes_route_type_field}GTFS vehicle type}} for the feed 
+  
   []
+
+  For the <<<--vehicleType>>> argument, you can specify a numeric
+  {{{https://developers.google.com/transit/gtfs/reference#routes_route_type_field}GTFS route type value}}
+  or you can specify one of the following:
+  
+  * tram
+  
+  * streetcar
+  
+  * lightrail
+  
+  * subway
+  
+  * metro
+  
+  * rail
+  
+  * bus
+  
+  * ferry
+  
+  * cablecar
+  
+  * gondola
+  
+  * funicular
+  
+  []
+   
