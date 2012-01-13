@@ -145,7 +145,8 @@ public class AtcoCifToGtfsConverter {
       for (int i = 0; i < journies.size(); ++i) {
         JourneyHeaderElement journey = journies.get(i);
         Trip trip = new Trip();
-        String id = journey.getJourneyIdentifier();
+        String id = journey.getOperatorId() + "-"
+            + journey.getJourneyIdentifier();
         if (journies.size() > 1) {
           id += "-" + i;
         }
@@ -169,12 +170,13 @@ public class AtcoCifToGtfsConverter {
   }
 
   private Route getRouteForJourney(JourneyHeaderElement journey) {
-    AgencyAndId routeId = new AgencyAndId(journey.getOperatorId(),
-        journey.getRouteIdentifier());
+    String operatorId = journey.getOperatorId();
+    AgencyAndId routeId = new AgencyAndId(operatorId, operatorId + "-"
+        + journey.getRouteIdentifier());
     Route route = _dao.getRouteForId(routeId);
     if (route == null) {
       route = new Route();
-      route.setAgency(getAgencyForId(journey.getOperatorId()));
+      route.setAgency(getAgencyForId(operatorId));
       route.setId(routeId);
       route.setShortName(routeId.getId());
       route.setType(getRouteTypeForJourney(journey));
