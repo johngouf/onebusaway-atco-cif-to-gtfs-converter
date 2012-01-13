@@ -122,6 +122,7 @@ public class AtcoCifParser {
      */
     String prefix = peek(1);
     if (prefix.length() == 1 && Arrays.equals(prefix.getBytes(), UTF8_BOM)) {
+      _log.info("BOM!");
       pop(1);
     }
     String start = pop(8);

@@ -122,8 +122,17 @@ public class AtcoCifToGtfsConverter {
   }
 
   public void run() throws IOException {
+
+    _log.info("Input path: " + _inputPath);
+    _log.info("Output path: " + _outputPath);
+
     List<File> paths = new ArrayList<File>();
     getApplicableFiles(_inputPath, paths);
+
+    if (paths.isEmpty()) {
+      _log.error("No applicable input files were found!");
+      System.exit(-1);
+    }
 
     AtcoCifParser parser = new AtcoCifParser();
     HandlerImpl handler = new HandlerImpl();
@@ -449,11 +458,14 @@ public class AtcoCifToGtfsConverter {
   }
 
   private void getApplicableFiles(File path, List<File> applicableFiles) {
+    _log.info("Scanning path: " + path);
     if (path.isDirectory()) {
+      _log.info("Directory found...");
       for (File subPath : path.listFiles()) {
         getApplicableFiles(subPath, applicableFiles);
       }
     } else if (path.getName().toLowerCase().endsWith(".cif")) {
+      _log.info("CIF File found!");
       applicableFiles.add(path);
     }
   }
