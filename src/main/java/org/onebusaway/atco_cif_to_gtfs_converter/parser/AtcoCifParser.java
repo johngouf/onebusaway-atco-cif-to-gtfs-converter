@@ -303,8 +303,8 @@ public class AtcoCifParser {
     Point2D.Double from = null;
 
     try {
-      long x = Long.parseLong(xValue);
-      long y = Long.parseLong(yValue);
+      double x = Long.parseLong(xValue) / 100;
+      double y = Long.parseLong(yValue) / 100;
       from = new Point2D.Double(x, y);
     } catch (NumberFormatException ex) {
       throw new AtcoCifException("error parsing additional location: x="
@@ -317,16 +317,10 @@ public class AtcoCifParser {
           _toProjection, from, result);
       return result;
     } catch (ProjectionException ex) {
-      if (xValue.endsWith("00") && yValue.endsWith("00") && canStripSuffix) {
-        xValue = xValue.substring(0, xValue.length() - 2);
-        yValue = yValue.substring(0, yValue.length() - 2);
-        return getLocation(xValue, yValue, false);
-      }
+      _log.warn("error projecting additional location: x=" + xValue + " y="
+          + yValue + " line=" + _currentLineNumber);
+      return null;
     }
-
-    _log.warn("error projecting additional location: x=" + xValue + " y="
-        + yValue + " line=" + _currentLineNumber);
-    return null;
   }
 
   private void parseVehicleType(AtcoCifContentHandler handler) {

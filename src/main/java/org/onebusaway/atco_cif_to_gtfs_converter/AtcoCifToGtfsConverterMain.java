@@ -20,6 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -43,6 +45,10 @@ public class AtcoCifToGtfsConverterMain {
   private static final String ARG_AGENCY_URL = "agencyUrl";
 
   private static final String ARG_VEHICLE_TYPE = "vehicleType";
+
+  private static final String ARG_PRUNE_STOPS_WITH_NO_LOCATION_INFO = "pruneStopsWithNoLocationInfo";
+
+  private static final String ARG_PRUNE_STOPS_WITH_PREFIX = "pruneStopsWithPrefix";
 
   public static void main(String[] args) throws ParseException, IOException {
     AtcoCifToGtfsConverterMain m = new AtcoCifToGtfsConverterMain();
@@ -120,6 +126,17 @@ public class AtcoCifToGtfsConverterMain {
         }
       }
     }
+    converter.setPruneStopsWithNoLocationInfo(cli.hasOption(ARG_PRUNE_STOPS_WITH_NO_LOCATION_INFO));
+
+    if (cli.hasOption(ARG_PRUNE_STOPS_WITH_PREFIX)) {
+      Set<String> pruneStopsWithPrefixes = new HashSet<String>();
+      for (String prefix : cli.getOptionValues(ARG_PRUNE_STOPS_WITH_PREFIX)) {
+        pruneStopsWithPrefixes.add(prefix);
+      }
+      if (!pruneStopsWithPrefixes.isEmpty()) {
+        converter.setPruneStopsWithPrefixes(pruneStopsWithPrefixes);
+      }
+    }
   }
 
   protected void buildOptions(Options options) {
@@ -130,6 +147,8 @@ public class AtcoCifToGtfsConverterMain {
     options.addOption(ARG_AGENCY_TIMEZONE, true, "agency timezone");
     options.addOption(ARG_AGENCY_URL, true, "agency url");
     options.addOption(ARG_VEHICLE_TYPE, true, "vehicle type");
+    options.addOption(ARG_PRUNE_STOPS_WITH_NO_LOCATION_INFO, false, "");
+    options.addOption(ARG_PRUNE_STOPS_WITH_PREFIX, true, "");
   }
 
   private void usage() throws IOException {

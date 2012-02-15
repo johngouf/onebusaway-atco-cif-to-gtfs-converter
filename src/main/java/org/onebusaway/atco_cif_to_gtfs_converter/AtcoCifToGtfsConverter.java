@@ -17,14 +17,17 @@ package org.onebusaway.atco_cif_to_gtfs_converter;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.onebusaway.atco_cif_to_gtfs_converter.parser.AdditionalLocationElement;
 import org.onebusaway.atco_cif_to_gtfs_converter.parser.AtcoCifContentHandler;
@@ -42,6 +45,7 @@ import org.onebusaway.csv_entities.schema.DefaultEntitySchemaFactory;
 import org.onebusaway.gtfs.impl.GtfsRelationalDaoImpl;
 import org.onebusaway.gtfs.model.Agency;
 import org.onebusaway.gtfs.model.AgencyAndId;
+import org.onebusaway.gtfs.model.IdentityBean;
 import org.onebusaway.gtfs.model.Route;
 import org.onebusaway.gtfs.model.ServiceCalendar;
 import org.onebusaway.gtfs.model.ServiceCalendarDate;
@@ -51,6 +55,7 @@ import org.onebusaway.gtfs.model.Trip;
 import org.onebusaway.gtfs.model.calendar.ServiceDate;
 import org.onebusaway.gtfs.serialization.GtfsEntitySchemaFactory;
 import org.onebusaway.gtfs.serialization.GtfsWriter;
+import org.onebusaway.gtfs_transformer.factory.EntityRetentionGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,6 +99,18 @@ public class AtcoCifToGtfsConverter {
 
   private GtfsRelationalDaoImpl _dao = new GtfsRelationalDaoImpl();
 
+  private boolean _pruneStopsWithNoLocationInfo = false;
+
+  private Set<String> _pruneStopsWithPrefixes = Collections.emptySet();
+
+  private Set<String> _stopsWithNoLocationInfo = new HashSet<String>();
+
+  private int _prunedStopsWithNoLocationInfoCount = 0;
+
+  private int _prunedStopTimesCount = 0;
+
+  private int _prunedTripsCount = 0;
+
   public void setInputPath(File inputPath) {
     _inputPath = inputPath;
   }
@@ -125,9 +142,18 @@ public class AtcoCifToGtfsConverter {
   public void setAgencyLang(String agencyLang) {
     _agencyLang = agencyLang;
   }
-  
+
   public void setVehicleType(int vehicleType) {
     _vehicleType = vehicleType;
+  }
+
+  public void setPruneStopsWithNoLocationInfo(
+      boolean pruneStopsWithNoLocationInfo) {
+    _pruneStopsWithNoLocationInfo = pruneStopsWithNoLocationInfo;
+  }
+
+  public void setPruneStopsWithPrefixes(Set<String> pruneStopsWithPrefixes) {
+    _pruneStopsWithPrefixes = pruneStopsWithPrefixes;
   }
 
   public void run() throws IOException {
@@ -152,16 +178,27 @@ public class AtcoCifToGtfsConverter {
 
     constructGtfs();
     writeGtfs();
+
+    if (_prunedStopsWithNoLocationInfoCount > 0) {
+      _log.info(String.format(
+          "pruned stops with no location info: %d stops used by %d stop times in %d trips",
+          _prunedStopsWithNoLocationInfoCount, _prunedStopTimesCount,
+          _prunedTripsCount));
+    }
   }
 
   private void constructGtfs() {
     constructTrips();
+    pruneTrips();
   }
 
   private void constructTrips() {
     for (List<JourneyHeaderElement> journies : _journeysById.values()) {
       for (int i = 0; i < journies.size(); ++i) {
         JourneyHeaderElement journey = journies.get(i);
+        if (journey.getOperatorId().equals("EU")) {
+          continue;
+        }
         Trip trip = new Trip();
         String id = journey.getOperatorId() + "-"
             + journey.getJourneyIdentifier();
@@ -184,6 +221,26 @@ public class AtcoCifToGtfsConverter {
         constructTimepoints(journey, trip);
         _dao.saveEntity(trip);
       }
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void pruneTrips() {
+    EntityRetentionGraph graph = new EntityRetentionGraph(_dao);
+    for (Trip trip : _dao.getAllTrips()) {
+      List<StopTime> stopTimes = _dao.getStopTimesForTrip(trip);
+      if (stopTimes.size() > 1) {
+        graph.retainUp(trip);
+      }
+    }
+    for (Class<?> entityClass : GtfsEntitySchemaFactory.getEntityClasses()) {
+      List<Object> objectsToRemove = new ArrayList<Object>();
+      for (Object entity : _dao.getAllEntitiesForType(entityClass)) {
+        if (!graph.isRetained(entity))
+          objectsToRemove.add(entity);
+      }
+      for (Object toRemove : objectsToRemove)
+        _dao.removeEntity((IdentityBean<Serializable>) toRemove);
     }
   }
 
@@ -339,13 +396,23 @@ public class AtcoCifToGtfsConverter {
     normalizeTimes(journey);
 
     boolean first = true;
+    boolean prunedStopWithoutLocationInfo = false;
 
     for (JourneyTimePointElement timePoint : journey.getTimePoints()) {
       String stopId = timePoint.getLocationId();
       Stop stop = findStop(stopId);
+
+      /**
+       * A NULL stop indicates a stop that has been pruned because it doesn't
+       * have location information. We do not produce stop times for these
+       * stops.
+       */
       if (stop == null) {
-        throw new AtcoCifException("no stop found with id " + stopId);
+        prunedStopWithoutLocationInfo = true;
+        _prunedStopTimesCount++;
+        continue;
       }
+
       StopTime stopTime = new StopTime();
       stopTime.setTrip(trip);
       stopTime.setStop(stop);
@@ -358,6 +425,10 @@ public class AtcoCifToGtfsConverter {
       stopTime.setStopSequence(_dao.getAllStopTimes().size());
       _dao.saveEntity(stopTime);
       first = false;
+    }
+
+    if (prunedStopWithoutLocationInfo) {
+      _prunedTripsCount++;
     }
   }
 
@@ -394,10 +465,17 @@ public class AtcoCifToGtfsConverter {
   }
 
   private Stop findStop(String stopId) {
+
+    for (String prefix : _pruneStopsWithPrefixes) {
+      if (stopId.startsWith(prefix)) {
+        return null;
+      }
+    }
     LocationElement location = getLocationForId(stopId);
     if (location == null) {
-      return null;
+      throw new AtcoCifException("no stop found with id " + stopId);
     }
+
     String locationId = location.getLocationId();
     AgencyAndId id = id(locationId);
     Stop stop = _dao.getStopForId(id);
@@ -408,16 +486,23 @@ public class AtcoCifToGtfsConverter {
             + " but no additional location information found");
       }
 
+      if (additionalLocation.getLat() == 0.0
+          || additionalLocation.getLon() == 0.0) {
+        if (_stopsWithNoLocationInfo.add(stopId)) {
+          _log.info("stop with no location: " + locationId);
+          _prunedStopsWithNoLocationInfoCount++;
+        }
+        if (_pruneStopsWithNoLocationInfo) {
+          return null;
+        }
+      }
+
       stop = new Stop();
       stop.setId(id(locationId));
       stop.setName(location.getName());
       stop.setLat(additionalLocation.getLat());
       stop.setLon(additionalLocation.getLon());
 
-      if (additionalLocation.getLat() == 0.0
-          || additionalLocation.getLon() == 0.0) {
-        _log.info("stop with no location: " + locationId);
-      }
       _dao.saveEntity(stop);
     }
     return stop;
