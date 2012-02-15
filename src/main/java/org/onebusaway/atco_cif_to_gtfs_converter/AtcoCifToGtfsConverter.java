@@ -375,27 +375,6 @@ public class AtcoCifToGtfsConverter {
       int arrivalTime = timepoint.getArrivalTime();
       int departureTime = timepoint.getDepartureTime();
 
-      /**
-       * If both arrival and departure time are zero, we consider them
-       * "unspecified"
-       */
-      if (arrivalTime == 0 && departureTime == 0) {
-        boolean mightBeMidnight = mightBeMidnight(timepoints, timepoint, i,
-            prevDepartureTime);
-
-        if (!mightBeMidnight) {
-          continue;
-        }
-      }
-
-      if (departureTime == 0 && arrivalTime != 0) {
-        departureTime = arrivalTime;
-      }
-
-      if (arrivalTime == 0 && departureTime != 0) {
-        arrivalTime = departureTime;
-      }
-
       arrivalTime += dayOffset * MINUTES_IN_DAY;
       while (arrivalTime < prevDepartureTime) {
         arrivalTime += MINUTES_IN_DAY;
@@ -412,14 +391,6 @@ public class AtcoCifToGtfsConverter {
       timepoint.setDepartureTime(departureTime);
       prevDepartureTime = departureTime;
     }
-  }
-
-  private boolean mightBeMidnight(List<JourneyTimePointElement> timepoints,
-      JourneyTimePointElement timepoint, int i, int prevDepartureTime) {
-
-    int timeToMidnight = MINUTES_IN_DAY - (prevDepartureTime % MINUTES_IN_DAY);
-    boolean firstOrLast = (i == 0) || (i > 0 && i == timepoints.size() - 1);
-    return firstOrLast && timeToMidnight < 15;
   }
 
   private Stop findStop(String stopId) {
