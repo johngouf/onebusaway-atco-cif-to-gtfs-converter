@@ -4,7 +4,7 @@
   <parent>
     <artifactId>onebusaway</artifactId>
     <groupId>org.onebusaway</groupId>
-    <version>1.1.7-SNAPSHOT</version>
+    <version>1.1.7</version>
   </parent>
   <artifactId>onebusaway-atco-cif-to-gtfs-converter</artifactId>
   <version>0.0.1-SNAPSHOT</version>
@@ -77,7 +77,6 @@
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>1.2.2</version>
         <executions>
           <execution>
             <phase>package</phase>
