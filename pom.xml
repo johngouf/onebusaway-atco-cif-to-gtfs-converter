@@ -4,7 +4,7 @@
   <parent>
     <artifactId>onebusaway</artifactId>
     <groupId>org.onebusaway</groupId>
-    <version>1.1.6</version>
+    <version>1.1.7-SNAPSHOT</version>
   </parent>
   <artifactId>onebusaway-atco-cif-to-gtfs-converter</artifactId>
   <version>0.0.1-SNAPSHOT</version>
@@ -70,34 +70,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <version>1.10.b1</version>
-        <configuration>
-          <header>src/license/header.txt</header>
-          <excludes>
-            <exclude>src/site/**</exclude>
-            <exclude>**/usage.txt</exclude>
-            <exclude>**/log4j.properties</exclude>
-          </excludes>
-          <strictCheck>true</strictCheck>
-          <headerSections>
-            <headerSection>
-              <key>COPYRIGHT_SECTION</key>
-              <defaultValue>Copyright (C) 2012 Google, Inc.</defaultValue>
-              <ensureMatch>Copyright \(C\) \d{4} .+</ensureMatch>
-            </headerSection>
-          </headerSections>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <version>1.2.2</version>
