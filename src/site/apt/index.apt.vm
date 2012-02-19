@@ -2,7 +2,7 @@ onebusaway-atco-cif-to-gtfs-converter
 
   We provide a utility for converting transit schedule information in the
   {{{http://travelinedata.org.uk/CIF/atco-cif-spec.pdf}ATCO-CIF}} format into
-  the {{{http://code.google.com/transit/spec/transit_feed_specification.html}GTFS}}
+  the {{{https://developers.google.com/transit/gtfs/}GTFS}}
   format.
   
   #set( $url = 'http://nexus.onebusaway.org/service/local/artifact/maven/content?r=public&g=org.onebusaway&a=onebusaway-atco-cif-to-gtfs-converter&v=' + ${currentVersion} )
@@ -49,6 +49,9 @@ java -jar onebusaway-atco-cif-to-gtfs-converter.jar [args] atco_cif_input_path g
   
   * <<<--vehicleType=...>>> - specify a default {{{https://developers.google.com/transit/gtfs/reference#routes_route_type_field}GTFS vehicle type}} for the feed 
   
+  * <<<--pruneStopsWithNoLocationInfo>>> - prune stops with no location information
+  
+  * <<<--pruneStopsWithPrefix=prefix>>> - prune stops with the specified stop id prefix
   []
 
   For the <<<--vehicleType>>> argument, you can specify a numeric
@@ -78,4 +81,12 @@ java -jar onebusaway-atco-cif-to-gtfs-converter.jar [args] atco_cif_input_path g
   * funicular
   
   []
+  
+  If you have stops without location information in your ATCO CIF feed, it is
+  possible to prune them from resulting GTFS feed, along with their stop times,
+  using the <<<--pruneStopsWithNoLocationInfo>>> argument.  You can also prune
+  arbitrary stops with a particular stop id prefix using the
+  <<<--pruneStopsWithPrefix=prefix>>> argument.
+  
+    
    
