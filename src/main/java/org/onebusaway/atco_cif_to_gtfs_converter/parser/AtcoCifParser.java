@@ -303,8 +303,8 @@ public class AtcoCifParser {
     Point2D.Double from = null;
 
     try {
-      double x = Long.parseLong(xValue) / 100;
-      double y = Long.parseLong(yValue) / 100;
+      double x = Long.parseLong(xValue);
+      double y = Long.parseLong(yValue);
       from = new Point2D.Double(x, y);
     } catch (NumberFormatException ex) {
       throw new AtcoCifException("error parsing additional location: x="
