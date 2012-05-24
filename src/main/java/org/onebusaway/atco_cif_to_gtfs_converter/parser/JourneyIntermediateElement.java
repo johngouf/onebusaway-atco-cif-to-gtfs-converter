@@ -18,8 +18,10 @@ package org.onebusaway.atco_cif_to_gtfs_converter.parser;
 public class JourneyIntermediateElement extends JourneyTimePointElement {
 
   private int arrivalTime;
+  private String arrivalString;
 
   private int departureTime;
+  private String departureString;
 
   public JourneyIntermediateElement() {
     super(AtcoCifElement.Type.JOURNEY_INTERMEDIATE);
@@ -42,4 +44,21 @@ public class JourneyIntermediateElement extends JourneyTimePointElement {
   public void setDepartureTime(int departureTime) {
     this.departureTime = departureTime;
   }
+
+    public String getArrivalString() {
+        return arrivalString;
+    }
+
+    public void setArrivalString(String arrivalString) {
+        this.arrivalString = arrivalString;
+    }
+
+    public String getDepartureString() {
+        return departureString;
+    }
+
+    public void setDepartureString(String departureString) {
+        this.departureString = departureString;
+    }
+    
 }
