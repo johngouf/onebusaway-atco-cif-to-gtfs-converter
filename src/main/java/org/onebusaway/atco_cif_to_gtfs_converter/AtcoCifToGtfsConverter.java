@@ -283,10 +283,11 @@ public class AtcoCifToGtfsConverter {
     return agency;
   }
 
-  private int getRouteTypeForJourney(JourneyHeaderElement journey) {
+  private int getRouteTypeForJourney(JourneyHeaderElement journey) {   
     VehicleTypeElement vehicleType = _vehicleTypesById.get(journey.getVehicleType());
     if (vehicleType == null) {
-      throw new AtcoCifException("unknown vehicle type: " + vehicleType);
+        return (this._vehicleType);
+//        throw new AtcoCifException("unknown vehicle type: " + vehicleType);
     }
     String desc = vehicleType.getDescription().toLowerCase();
     if (desc.equals("bus") || desc.equals("coach")) {
